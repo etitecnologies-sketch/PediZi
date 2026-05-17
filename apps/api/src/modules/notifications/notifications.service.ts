@@ -11,7 +11,7 @@ export class NotificationsService {
   ) {}
 
   async create(userId: string, data: { type: NotificationType; title: string; message: string; data?: Record<string, unknown> }) {
-    const notification = await this.prisma.notification.create({ data: { userId, ...data } })
+    const notification = await this.prisma.notification.create({ data: { userId, ...data } as any })
     this.realtime.notifyUser(userId, 'notification:sent', notification)
     return notification
   }

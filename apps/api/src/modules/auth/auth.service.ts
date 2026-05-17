@@ -120,15 +120,11 @@ export class AuthService {
   private async generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role }
 
+    const jwtOpts1: any = { secret: this.configService.get('JWT_SECRET', 'fallback'), expiresIn: '15m' }
+    const jwtOpts2: any = { secret: this.configService.get('JWT_REFRESH_SECRET', 'fallback-r'), expiresIn: '7d' }
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload as any, {
-        secret: this.configService.get<string>('JWT_SECRET') ?? 'fallback',
-        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '15m'),
-      }),
-      this.jwtService.signAsync(payload as any, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET') ?? 'fallback-refresh',
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
-      }),
+      this.jwtService.signAsync(payload as any, jwtOpts1),
+      this.jwtService.signAsync(payload as any, jwtOpts2),
     ])
 
     return { accessToken, refreshToken, expiresIn: 900 }
