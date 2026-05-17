@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = [
+  "npm install -g pnpm@9",
+  "pnpm install --frozen-lockfile --filter @pedizi/api..."
+]
+
+[phases.build]
+cmds = [
+  "pnpm exec prisma generate --schema=apps/api/prisma/schema.prisma",
+  "pnpm --filter @pedizi/api build"
+]
+
+[start]
+cmd = "node apps/api/dist/main"
