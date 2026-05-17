@@ -1,10 +1,9 @@
 [phases.setup]
-nixPkgs = ["nodejs_22"]
+nixPkgs = ["nodejs_22", "nodePackages.pnpm"]
 
 [phases.install]
 cmds = [
-  "npm install -g pnpm@9.15.4",
-  "pnpm install --no-frozen-lockfile --filter @pedizi/api..."
+  "pnpm install --frozen-lockfile"
 ]
 
 [phases.build]
