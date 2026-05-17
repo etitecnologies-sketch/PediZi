@@ -1,0 +1,184 @@
+version: '3.9'
+
+# ═══════════════════════════════════════════════════════
+# PEDIZI — Docker Compose PRODUÇÃO
+# Use: docker compose up -d --build
+# ═══════════════════════════════════════════════════════
+
+x-restart-policy: &restart-policy
+  restart: unless-stopped
+
+services:
+
+  # ── PostgreSQL ─────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: pedizi_postgres
+    <<: *restart-policy
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pedizi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pedizi_prod_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-pedizi_db}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-pedizi} -d ${POSTGRES_DB:-pedizi_db}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - pedizi_net
+
+  # ── Redis ──────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: pedizi_redis
+    <<: *restart-policy
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-pedizi_redis_2024}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-pedizi_redis_2024}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pedizi_net
+
+  # ── MinIO (Storage local) ───────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: pedizi_minio
+    <<: *restart-policy
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pedizi}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pedizi_minio_2024}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - miniodata:/data
+    networks:
+      - pedizi_net
+
+  # ── PEDIZI API (NestJS) ─────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: pedizi_api
+    <<: *restart-policy
+    ports:
+      - '${API_PORT:-3333}:3333'
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      RUN_MIGRATIONS: 'true'
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pedizi}:${POSTGRES_PASSWORD:-pedizi_prod_2024}@postgres:5432/${POSTGRES_DB:-pedizi_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-pedizi_redis_2024}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pedizi_net
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # ── Admin Dashboard ─────────────────────────────
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    container_name: pedizi_admin
+    <<: *restart-policy
+    ports:
+      - '3001:3001'
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333/api/v1}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-http://localhost:3333}
+    depends_on:
+      - api
+    networks:
+      - pedizi_net
+
+  # ── App Web Cliente ─────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: pedizi_web
+    <<: *restart-policy
+    ports:
+      - '3000:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333/api/v1}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-http://localhost:3333}
+    depends_on:
+      - api
+    networks:
+      - pedizi_net
+
+  # ── Painel Restaurante ──────────────────────────
+  restaurant:
+    build:
+      context: .
+      dockerfile: apps/restaurant/Dockerfile
+    container_name: pedizi_restaurant
+    <<: *restart-policy
+    ports:
+      - '3002:3002'
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333/api/v1}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-http://localhost:3333}
+    depends_on:
+      - api
+    networks:
+      - pedizi_net
+
+  # ── Nginx Reverse Proxy ─────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: pedizi_nginx
+    <<: *restart-policy
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/certbot/conf:/etc/letsencrypt:ro
+      - ./infra/certbot/www:/var/www/certbot:ro
+    depends_on:
+      - api
+      - web
+      - admin
+      - restaurant
+    networks:
+      - pedizi_net
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+
+networks:
+  pedizi_net:
+    driver: bridge

@@ -1,0 +1,66 @@
+# ── Dependências ─────────────────────────────────
+node_modules
+.pnpm-store
+.pnpm-debug.log*
+
+# ── Build outputs ─────────────────────────────────
+dist
+.next
+out
+build
+*.tsbuildinfo
+
+# ── Variáveis de ambiente (NUNCA subir!) ──────────
+.env
+.env.local
+.env.*.local
+apps/api/.env
+apps/web/.env.local
+apps/admin/.env.local
+apps/restaurant/.env.local
+
+# ── Turbo cache ───────────────────────────────────
+.turbo
+
+# ── Logs ─────────────────────────────────────────
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Banco de dados local ─────────────────────────
+*.db
+*.sqlite
+pgdata
+redisdata
+miniodata
+
+# ── OS ───────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── IDE ───────────────────────────────────────────
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+
+# ── Testes ───────────────────────────────────────
+coverage
+.nyc_output
+
+# ── Certbot / SSL ────────────────────────────────
+infra/certbot/conf
+infra/certbot/www
+
+# ── Claude Code ──────────────────────────────────
+.claude

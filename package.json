@@ -1,0 +1,33 @@
+{
+  "name": "pedizi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PEDIZI — O delivery da sua cidade. SaaS Marketplace de Delivery.",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "turbo run db:migrate",
+    "db:seed": "turbo run db:seed",
+    "db:studio": "pnpm --filter @pedizi/api exec prisma studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@11.1.2"
+}

@@ -1,0 +1,142 @@
+name: Deploy — PEDIZI
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Deploy API no Railway ──────────────────────────────
+  deploy-api:
+    name: Deploy API (Railway)
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy API
+        run: railway up --service api --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  # ── Deploy Admin na Vercel ─────────────────────────────
+  deploy-admin:
+    name: Deploy Admin (Vercel)
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Instalar Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy Admin
+        run: |
+          cd apps/admin
+          vercel --prod --yes \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=${{ secrets.VERCEL_ORG_ID }}
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_WS_URL: ${{ secrets.NEXT_PUBLIC_WS_URL }}
+
+  # ── Deploy Web na Vercel ───────────────────────────────
+  deploy-web:
+    name: Deploy Web (Vercel)
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Instalar Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy Web
+        run: |
+          cd apps/web
+          vercel --prod --yes \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=${{ secrets.VERCEL_ORG_ID }}
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEB_PROJECT_ID }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_WS_URL: ${{ secrets.NEXT_PUBLIC_WS_URL }}
+
+  # ── Deploy Restaurante na Vercel ──────────────────────
+  deploy-restaurant:
+    name: Deploy Restaurante (Vercel)
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Instalar Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy Restaurante
+        run: |
+          cd apps/restaurant
+          vercel --prod --yes \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=${{ secrets.VERCEL_ORG_ID }}
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_RESTAURANT_PROJECT_ID }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_WS_URL: ${{ secrets.NEXT_PUBLIC_WS_URL }}
+
+  # ── Notificação de sucesso ─────────────────────────────
+  notify:
+    name: Notificação
+    runs-on: ubuntu-latest
+    needs: [deploy-api, deploy-admin, deploy-web, deploy-restaurant]
+    if: always()
+
+    steps:
+      - name: Resultado do deploy
+        run: |
+          if [ "${{ needs.deploy-api.result }}" == "success" ] && \
+             [ "${{ needs.deploy-web.result }}" == "success" ] && \
+             [ "${{ needs.deploy-admin.result }}" == "success" ]; then
+            echo "✅ Deploy completo! PEDIZI está no ar."
+          else
+            echo "❌ Alguns deploys falharam. Verifique os logs."
+            exit 1
+          fi

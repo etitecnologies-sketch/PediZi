@@ -1,0 +1,57 @@
+version: '3.9'
+
+# PEDIZI — Docker Compose (Apenas serviços de infraestrutura)
+# Use este arquivo para rodar apenas o banco e Redis localmente
+# enquanto desenvolve os apps com pnpm dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pedizi_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pedizi
+      POSTGRES_PASSWORD: pedizi123
+      POSTGRES_DB: pedizi_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    networks:
+      - pedizi_dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: pedizi_redis_dev
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata_dev:/data
+    networks:
+      - pedizi_dev
+
+  minio:
+    image: minio/minio:latest
+    container_name: pedizi_minio_dev
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: pedizi
+      MINIO_ROOT_PASSWORD: pedizi123
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - miniodata_dev:/data
+    networks:
+      - pedizi_dev
+
+volumes:
+  pgdata_dev:
+  redisdata_dev:
+  miniodata_dev:
+
+networks:
+  pedizi_dev:
+    driver: bridge
