@@ -7,9 +7,9 @@ import { ConfigService } from '@nestjs/config'
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(private configService: ConfigService) {
     super({
-      clientID: configService.get<string>('GOOGLE_CLIENT_ID') ?? '',
-      clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET') ?? '',
-      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL') ?? '',
+      clientID: configService.get('GOOGLE_CLIENT_ID', 'google-not-configured'),
+      clientSecret: configService.get('GOOGLE_CLIENT_SECRET', 'google-not-configured'),
+      callbackURL: configService.get('GOOGLE_CALLBACK_URL', 'http://localhost:3333/api/v1/auth/google/callback'),
       scope: ['email', 'profile'],
     })
   }
@@ -25,12 +25,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     },
     done: VerifyCallback,
   ) {
-    const { id, displayName, emails, photos } = profile
     done(null, {
-      googleId: id,
-      email: emails[0]?.value ?? '',
-      name: displayName,
-      avatarUrl: photos[0]?.value,
+      googleId: profile.id,
+      email: profile.emails?.[0]?.value ?? '',
+      name: profile.displayName,
+      avatarUrl: profile.photos?.[0]?.value,
     })
   }
 }
