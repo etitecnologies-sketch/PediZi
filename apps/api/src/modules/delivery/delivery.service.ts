@@ -65,7 +65,7 @@ export class DeliveryService {
 
   async registerCourier(userId: string, data: { document: string; vehicleType: string; vehiclePlate?: string }) {
     return this.prisma.courier.create({
-      data: { userId, status: 'PENDING_APPROVAL' as any, ...data },
+      data: { userId, status: 'PENDING_APPROVAL', vehicleType: data.vehicleType, document: data.document, vehiclePlate: data.vehiclePlate } as any,
     })
   }
 
