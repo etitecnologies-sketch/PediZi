@@ -1,10 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "name": "pedizi-restaurant",
   "framework": "nextjs",
-  "buildCommand": "pnpm build",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @pedizi/restaurant build",
   "outputDirectory": ".next",
-  "installCommand": "pnpm install --frozen-lockfile",
   "regions": ["gru1"],
   "headers": [
     {
