@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../../infra/database/prisma/prisma.service'
 import { RealtimeService } from '../../infra/realtime/realtime.service'
-import { NotificationType } from '@prisma/client'
+type NotificationType = 'ORDER_PLACED' | 'ORDER_CONFIRMED' | 'ORDER_PREPARING' | 'ORDER_READY' | 'ORDER_PICKED_UP' | 'ORDER_DELIVERING' | 'ORDER_DELIVERED' | 'ORDER_CANCELLED' | 'PAYMENT_APPROVED' | 'PAYMENT_FAILED' | 'COURIER_ASSIGNED' | 'SYSTEM'
 
 @Injectable()
 export class NotificationsService {

@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../../infra/database/prisma/prisma.service'
 import { RealtimeService } from '../../infra/realtime/realtime.service'
-import { PaymentMethod } from '@prisma/client'
+type PaymentMethod = 'PIX' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CASH'
 import axios from 'axios'
 import * as crypto from 'crypto'
 

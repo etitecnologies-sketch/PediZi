@@ -7,11 +7,9 @@ import {
   Request,
   HttpCode,
   HttpStatus,
-  Res,
 } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger'
 import { AuthGuard } from '@nestjs/passport'
-import { Response } from 'express'
 import { ConfigService } from '@nestjs/config'
 
 import { AuthService } from './auth.service'
@@ -75,7 +73,7 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Callback do Google OAuth' })
-  async googleCallback(@Request() req: { user: { googleId: string; email: string; name: string; avatarUrl?: string } }, @Res() res: Response) {
+  async googleCallback(@Request() req: { user: { googleId: string; email: string; name: string; avatarUrl?: string } }, @Res() res: import('express').Response) {
     const tokens = await this.authService.googleLogin(req.user)
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000')
     res.redirect(`${frontendUrl}/auth/callback?token=${tokens.accessToken}&refresh=${tokens.refreshToken}`)

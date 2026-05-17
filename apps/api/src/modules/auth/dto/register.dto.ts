@@ -1,6 +1,8 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsEnum } from 'class-validator'
+import { IsEmail, IsString, MinLength, IsOptional, IsIn } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { UserRole } from '@prisma/client'
+
+const USER_ROLES = ['CLIENT', 'RESTAURANT_OWNER', 'COURIER', 'ADMIN'] as const
+type UserRole = typeof USER_ROLES[number]
 
 export class RegisterDto {
   @ApiProperty({ example: 'João Silva' })
@@ -21,8 +23,8 @@ export class RegisterDto {
   @IsOptional()
   phone?: string
 
-  @ApiPropertyOptional({ enum: UserRole, default: UserRole.CLIENT })
-  @IsEnum(UserRole)
+  @ApiPropertyOptional({ enum: USER_ROLES, default: 'CLIENT' })
+  @IsIn(USER_ROLES)
   @IsOptional()
   role?: UserRole
 }

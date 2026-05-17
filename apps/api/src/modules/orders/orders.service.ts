@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../infra/database/prisma/prisma.service'
 import { RealtimeService } from '../../infra/realtime/realtime.service'
-import { OrderStatus } from '@prisma/client'
+
+type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'DELIVERING' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
 
 @Injectable()
 export class OrdersService {
@@ -24,8 +25,8 @@ export class OrdersService {
     })
 
     let subtotal = 0
-    const orderItems = data.items.map(item => {
-      const menuItem = menuItems.find(m => m.id === item.menuItemId)
+    const orderItems = data.items.map((item: { menuItemId: string; quantity: number; notes?: string }) => {
+      const menuItem = menuItems.find((m) => m.id === item.menuItemId)
       if (!menuItem || !menuItem.isAvailable) throw new BadRequestException(`Item "${menuItem?.name}" indisponível`)
       const itemSubtotal = menuItem.price * item.quantity
       subtotal += itemSubtotal

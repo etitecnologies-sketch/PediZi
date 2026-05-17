@@ -1,8 +1,9 @@
 import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
-import { OrderStatus } from '@prisma/client'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { OrdersService } from './orders.service'
+
+type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'DELIVERING' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
 
 @ApiTags('orders')
 @UseGuards(JwtAuthGuard)
@@ -35,7 +36,7 @@ export class OrdersController {
     @Query('limit') limit = 20,
     @Query('status') status?: OrderStatus,
   ) {
-    return this.ordersService.findByRestaurant(restaurantId, { page: Number(page), limit: Number(limit), status })
+    return this.ordersService.findByRestaurant(restaurantId, { page: Number(page), limit: Number(limit), status: status as any })
   }
 
   @Get(':id')
@@ -51,6 +52,6 @@ export class OrdersController {
     @Request() req: { user: { sub: string } },
     @Body() body: { status: OrderStatus },
   ) {
-    return this.ordersService.updateStatus(id, body.status, req.user.sub)
+    return this.ordersService.updateStatus(id, body.status as any, req.user.sub)
   }
 }

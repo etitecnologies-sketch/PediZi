@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import Redis from 'ioredis'
 import { RedisService } from './redis.service'
 
 @Global()
@@ -7,10 +8,7 @@ import { RedisService } from './redis.service'
   providers: [
     {
       provide: 'REDIS_CLIENT',
-      useFactory: async (configService: ConfigService) => {
-        const { default: Redis } = await import('ioredis')
-
-        // Upstash usa URL com TLS (rediss://...)
+      useFactory: (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL')
         if (redisUrl) {
           return new Redis(redisUrl, {
@@ -19,8 +17,6 @@ import { RedisService } from './redis.service'
             lazyConnect: true,
           })
         }
-
-        // Configuração manual (host/port)
         return new Redis({
           host: configService.get<string>('REDIS_HOST', 'localhost'),
           port: configService.get<number>('REDIS_PORT', 6379),

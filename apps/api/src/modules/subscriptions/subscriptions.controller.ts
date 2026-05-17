@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Delete, Param, Body, UseGuards, Request } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
-import { SubscriptionPlan } from '@prisma/client'
+type SubscriptionPlan = 'FREE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { SubscriptionsService } from './subscriptions.service'
 

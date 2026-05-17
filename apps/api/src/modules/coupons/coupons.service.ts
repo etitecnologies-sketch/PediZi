@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../infra/database/prisma/prisma.service'
-import { CouponType } from '@prisma/client'
+type CouponType = 'PERCENTAGE' | 'FIXED' | 'FREE_DELIVERY'
 
 @Injectable()
 export class CouponsService {
