@@ -3,13 +3,13 @@ nixPkgs = ["nodejs_22"]
 
 [phases.install]
 cmds = [
-  "npm install -g pnpm@9",
-  "pnpm install --frozen-lockfile --filter @pedizi/api..."
+  "npm install -g pnpm@9.15.4",
+  "pnpm install --no-frozen-lockfile --filter @pedizi/api..."
 ]
 
 [phases.build]
 cmds = [
-  "pnpm exec prisma generate --schema=apps/api/prisma/schema.prisma",
+  "pnpm --filter @pedizi/api exec prisma generate",
   "pnpm --filter @pedizi/api build"
 ]
 
