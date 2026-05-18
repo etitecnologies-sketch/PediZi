@@ -14,10 +14,9 @@ RUN npm install -g pnpm@9.15.4
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/api ./apps/api
 COPY packages ./packages
-RUN chmod -R 755 /app/node_modules/.bin/
 WORKDIR /app/apps/api
-RUN node /app/node_modules/prisma/build/index.js generate --schema ./prisma/schema.prisma
-RUN node /app/node_modules/@nestjs/cli/bin/nest.js build
+RUN pnpm exec prisma generate --schema ./prisma/schema.prisma
+RUN pnpm exec nest build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
