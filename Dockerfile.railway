@@ -1,12 +1,10 @@
 # ── PEDIZI API — Dockerfile Railway (standalone npm) ──────────
-# Build direto na pasta da API, sem workspace pnpm
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Instala dependências de build
 RUN apk add --no-cache openssl python3 make g++
 
-# Copia apenas o necessário da API
+# Copia arquivos da API
 COPY apps/api/package.json ./package.json
 COPY apps/api/nest-cli.json ./nest-cli.json
 COPY apps/api/tsconfig.json ./tsconfig.json
@@ -14,29 +12,40 @@ COPY apps/api/tsconfig.build.json ./tsconfig.build.json
 COPY apps/api/prisma ./prisma
 COPY apps/api/src ./src
 
-# Instala TODAS as dependências (incluindo devDeps para build)
+# Instala todas as dependências
 RUN npm install --legacy-peer-deps
 
-# Gera Prisma Client e compila TypeScript
+# Gera Prisma Client
 RUN npx prisma generate --schema ./prisma/schema.prisma
+
+# Compila TypeScript
 RUN npx nest build
 
-# ── Runner (imagem de produção mínima) ────────────────────────
+# Verifica que o build existiu
+RUN ls -la dist/ && echo "✅ dist/ encontrado"
+
+# ── Runner ─────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 WORKDIR /app
+
 RUN apk add --no-cache openssl curl
 
 ENV NODE_ENV=production
 
-# Copia apenas o que o servidor precisa em runtime
+# Copia package.json e instala apenas produção
 COPY apps/api/package.json ./package.json
 RUN npm install --only=production --legacy-peer-deps
+
+# Copia dist compilado do builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
-# Copia o Prisma Client gerado
+# Copia Prisma Client gerado
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Verifica
+RUN ls -la dist/ && ls dist/main.js && echo "✅ dist/main.js presente"
 
 EXPOSE 3333
 
