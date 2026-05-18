@@ -1,0 +1,33 @@
+FROM node:20-alpine AS deps
+WORKDIR /app
+RUN npm install -g pnpm@9.15.4
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/types/package.json ./packages/types/
+COPY packages/config/package.json ./packages/config/
+COPY packages/ui/package.json ./packages/ui/
+RUN pnpm install --frozen-lockfile --filter @pedizi/api... || pnpm install --no-frozen-lockfile --filter @pedizi/api...
+
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN npm install -g pnpm@9.15.4
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules 2>/dev/null || true
+COPY apps/api ./apps/api
+COPY packages ./packages
+RUN chmod -R +x /app/node_modules/.bin/ 2>/dev/null || true
+WORKDIR /app/apps/api
+RUN node /app/node_modules/prisma/build/index.js generate --schema ./prisma/schema.prisma
+RUN node /app/node_modules/@nestjs/cli/bin/nest.js build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+RUN apk add --no-cache curl
+ENV NODE_ENV=production
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/prisma ./prisma
+EXPOSE 3333
+HEALTHCHECK --interval=30s --timeout=15s --start-period=90s --retries=3 \
+  CMD curl -f http://localhost:3333/api/v1/health || exit 1
+CMD ["node", "dist/main"]
