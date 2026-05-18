@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npx --yes prisma generate --schema ./prisma/schema.prisma && npx --yes nest build",
+    "build": "chmod +x ../../node_modules/.bin/* node_modules/.bin/* 2>/dev/null; prisma generate --schema ./prisma/schema.prisma && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "dev": "nest start --watch",
     "start": "nest start",
