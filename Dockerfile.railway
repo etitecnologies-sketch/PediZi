@@ -1,31 +1,46 @@
-FROM node:20-alpine AS deps
-WORKDIR /app
-RUN npm install -g pnpm@9.15.4
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/types/package.json ./packages/types/
-COPY packages/config/package.json ./packages/config/
-COPY packages/ui/package.json ./packages/ui/
-RUN pnpm install --no-frozen-lockfile --filter @pedizi/api...
-
+# ── PEDIZI API — Dockerfile Railway (standalone npm) ──────────
+# Build direto na pasta da API, sem workspace pnpm
 FROM node:20-alpine AS builder
 WORKDIR /app
-RUN npm install -g pnpm@9.15.4
-COPY --from=deps /app/node_modules ./node_modules
-COPY apps/api ./apps/api
-COPY packages ./packages
-WORKDIR /app/apps/api
-RUN pnpm exec prisma generate --schema ./prisma/schema.prisma
-RUN pnpm exec nest build
 
+# Instala dependências de build
+RUN apk add --no-cache openssl python3 make g++
+
+# Copia apenas o necessário da API
+COPY apps/api/package.json ./package.json
+COPY apps/api/nest-cli.json ./nest-cli.json
+COPY apps/api/tsconfig.json ./tsconfig.json
+COPY apps/api/tsconfig.build.json ./tsconfig.build.json
+COPY apps/api/prisma ./prisma
+COPY apps/api/src ./src
+
+# Instala TODAS as dependências (incluindo devDeps para build)
+RUN npm install --legacy-peer-deps
+
+# Gera Prisma Client e compila TypeScript
+RUN npx prisma generate --schema ./prisma/schema.prisma
+RUN npx nest build
+
+# ── Runner (imagem de produção mínima) ────────────────────────
 FROM node:20-alpine AS runner
 WORKDIR /app
-RUN apk add --no-cache curl
+RUN apk add --no-cache openssl curl
+
 ENV NODE_ENV=production
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/prisma ./prisma
+
+# Copia apenas o que o servidor precisa em runtime
+COPY apps/api/package.json ./package.json
+RUN npm install --only=production --legacy-peer-deps
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+
+# Copia o Prisma Client gerado
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
 EXPOSE 3333
-HEALTHCHECK --interval=30s --timeout=15s --start-period=90s --retries=3 \
+
+HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=5 \
   CMD curl -f http://localhost:3333/api/v1/health || exit 1
+
 CMD ["node", "dist/main"]
