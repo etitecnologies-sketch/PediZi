@@ -2,10 +2,6 @@
 
 import { motion } from 'framer-motion'
 import { BarChart3, TrendingUp, ShoppingBag, Star } from 'lucide-react'
-import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
-} from 'recharts'
 import { formatCurrency } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -35,6 +31,9 @@ const kpis = [
   { title: 'Avaliação média',     value: '4.8 ★',                sub: 'Baseado em 312 avaliações', color: '#F59E0B', icon: <Star className="w-5 h-5" /> },
 ]
 
+const maxPedidos = Math.max(...weeklyData.map((d) => d.pedidos))
+const maxReceita = Math.max(...weeklyData.map((d) => d.receita))
+
 export default function RelatoriosPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -46,6 +45,7 @@ export default function RelatoriosPage() {
         <BarChart3 className="w-5 h-5 text-[#FF1F24]" />
       </div>
 
+      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, i) => (
           <motion.div
@@ -67,53 +67,59 @@ export default function RelatoriosPage() {
         ))}
       </div>
 
+      {/* Gráfico de receita — barras CSS */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
         className="bg-[#161616] border border-white/5 rounded-2xl p-6"
       >
-        <h3 className="text-sm font-semibold text-white mb-5">Receita — últimos 7 dias</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={weeklyData}>
-            <defs>
-              <linearGradient id="colorReceita" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF1F24" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#FF1F24" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#666' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: '#666' }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${(v / 1000).toFixed(1)}k`} />
-            <Tooltip
-              contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }}
-              formatter={(value: number) => [formatCurrency(value), 'Receita']}
-            />
-            <Area type="monotone" dataKey="receita" stroke="#FF1F24" strokeWidth={2} fill="url(#colorReceita)" />
-          </AreaChart>
-        </ResponsiveContainer>
+        <h3 className="text-sm font-semibold text-white mb-6">Receita — últimos 7 dias</h3>
+        <div className="flex items-end gap-3 h-40">
+          {weeklyData.map((d, i) => (
+            <div key={d.day} className="flex-1 flex flex-col items-center gap-2">
+              <span className="text-[10px] text-gray-500 tabular-nums">
+                {formatCurrency(d.receita)}
+              </span>
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: `${(d.receita / maxReceita) * 100}%` }}
+                transition={{ delay: 0.3 + i * 0.05, duration: 0.4 }}
+                className="w-full rounded-t-lg bg-[#FF1F24] min-h-[4px]"
+                style={{ maxHeight: '120px' }}
+              />
+              <span className="text-xs text-gray-500">{d.day}</span>
+            </div>
+          ))}
+        </div>
       </motion.div>
 
+      {/* Gráfico de pedidos — barras CSS */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
         className="bg-[#161616] border border-white/5 rounded-2xl p-6"
       >
-        <h3 className="text-sm font-semibold text-white mb-5">Pedidos por dia</h3>
-        <ResponsiveContainer width="100%" height={160}>
-          <BarChart data={weeklyData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#666' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: '#666' }} axisLine={false} tickLine={false} />
-            <Tooltip
-              contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }}
-            />
-            <Bar dataKey="pedidos" name="Pedidos" fill="#FF1F24" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <h3 className="text-sm font-semibold text-white mb-6">Pedidos por dia</h3>
+        <div className="flex items-end gap-3 h-36">
+          {weeklyData.map((d, i) => (
+            <div key={d.day} className="flex-1 flex flex-col items-center gap-2">
+              <span className="text-[10px] text-gray-500">{d.pedidos}</span>
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: `${(d.pedidos / maxPedidos) * 100}%` }}
+                transition={{ delay: 0.35 + i * 0.05, duration: 0.4 }}
+                className="w-full rounded-t-lg bg-[#FF1F24]/60 min-h-[4px]"
+                style={{ maxHeight: '100px' }}
+              />
+              <span className="text-xs text-gray-500">{d.day}</span>
+            </div>
+          ))}
+        </div>
       </motion.div>
 
+      {/* Top itens */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -124,31 +130,32 @@ export default function RelatoriosPage() {
           <ShoppingBag className="w-4 h-4 text-[#FF1F24]" />
           <h3 className="text-sm font-semibold text-white">Itens mais vendidos</h3>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/5">
-              {['#', 'Item', 'Vendidos', 'Receita'].map((h) => (
-                <th key={h} className="text-left text-xs font-medium text-gray-500 px-5 py-3">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {topItems.map((item, i) => (
-              <motion.tr
-                key={item.name}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 + i * 0.04 }}
-                className="border-b border-white/[0.04] hover:bg-white/[0.02]"
-              >
-                <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">{i + 1}</td>
-                <td className="px-5 py-3.5 text-white font-medium">{item.name}</td>
-                <td className="px-5 py-3.5 text-gray-400 tabular-nums">{item.sold}</td>
-                <td className="px-5 py-3.5 text-white font-semibold tabular-nums">{formatCurrency(item.revenue)}</td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="divide-y divide-white/[0.04]">
+          {topItems.map((item, i) => (
+            <motion.div
+              key={item.name}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 + i * 0.04 }}
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors"
+            >
+              <span className="text-xs text-gray-600 font-mono w-4">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white font-medium">{item.name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden max-w-[120px]">
+                    <div
+                      className="h-full bg-[#FF1F24] rounded-full"
+                      style={{ width: `${(item.sold / topItems[0].sold) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500">{item.sold} vendidos</span>
+                </div>
+              </div>
+              <span className="text-sm text-white font-semibold tabular-nums">{formatCurrency(item.revenue)}</span>
+            </motion.div>
+          ))}
+        </div>
       </motion.div>
     </div>
   )
